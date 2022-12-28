@@ -6,14 +6,22 @@ import com.papsign.ktor.openapigen.modules.ofType
 import com.papsign.ktor.openapigen.modules.providers.AuthProvider
 import com.papsign.ktor.openapigen.modules.providers.StatusProvider
 import com.papsign.ktor.openapigen.route.OpenAPIRoute
-import io.ktor.http.HttpStatusCode
-import io.ktor.server.application.ApplicationCall
-import io.ktor.util.pipeline.PipelineContext
+import io.ktor.http.*
+import io.ktor.server.application.*
+import io.ktor.util.pipeline.*
 import kotlin.reflect.full.findAnnotation
 
 interface Responder {
-    suspend fun <TResponse: Any> respond(response: TResponse, request: PipelineContext<Unit, ApplicationCall>)
-    suspend fun <TResponse: Any> respond(statusCode: HttpStatusCode, response: TResponse, request: PipelineContext<Unit, ApplicationCall>)
+    suspend fun <TResponse : Any> respond(
+        response: TResponse,
+        request: PipelineContext<Unit, ApplicationCall>
+    )
+
+    suspend fun <TResponse : Any> respond(
+        statusCode: HttpStatusCode,
+        response: TResponse,
+        request: PipelineContext<Unit, ApplicationCall>
+    )
 }
 
 interface OpenAPIPipelineContext {
@@ -28,20 +36,28 @@ interface OpenAPIPipelineAuthContext<TAuth, TResponse> : OpenAPIPipelineResponse
 }
 
 class ResponseContextImpl<TResponse>(
-        override val pipeline: PipelineContext<Unit, ApplicationCall>,
-        override val route: OpenAPIRoute<*>,
-        override val responder: Responder
+    override val pipeline: PipelineContext<Unit, ApplicationCall>,
+    override val route: OpenAPIRoute<*>,
+    override val responder: Responder
 ) : OpenAPIPipelineResponseContext<TResponse>
 
 class AuthResponseContextImpl<TAuth, TResponse>(
-        override val pipeline: PipelineContext<Unit, ApplicationCall>,
-        override val authProvider: AuthProvider<TAuth>,
-        override val route: OpenAPIRoute<*>,
-        override val responder: Responder
+    override val pipeline: PipelineContext<Unit, ApplicationCall>,
+    override val authProvider: AuthProvider<TAuth>,
+    override val route: OpenAPIRoute<*>,
+    override val responder: Responder
 ) : OpenAPIPipelineAuthContext<TAuth, TResponse>
 
 
-suspend inline fun <reified TResponse : Any> OpenAPIPipelineResponseContext<TResponse>.respond(response: TResponse) {
-    val statusCode = route.provider.ofType<StatusProvider>().lastOrNull()?.getStatusForType(getKType<TResponse>()) ?: TResponse::class.findAnnotation<Response>()?.statusCode?.let { HttpStatusCode.fromValue(it) } ?: HttpStatusCode.OK
+suspend inline fun <reified TResponse : Any> OpenAPIPipelineResponseContext<TResponse>.respond(
+    response: TResponse
+) {
+    val statusCode = route.provider.ofType<StatusProvider>().lastOrNull()
+        ?.getStatusForType(getKType<TResponse>())
+        ?: TResponse::class.findAnnotation<Response>()?.statusCode?.let {
+            HttpStatusCode.fromValue(
+                it
+            )
+        } ?: HttpStatusCode.OK
     responder.respond(statusCode, response as Any, pipeline)
 }

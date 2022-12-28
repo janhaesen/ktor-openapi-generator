@@ -7,13 +7,10 @@ import com.papsign.ktor.openapigen.model.info.InfoModel
 import com.papsign.ktor.openapigen.model.server.ServerModel
 import com.papsign.ktor.openapigen.modules.CachingModuleProvider
 import com.papsign.ktor.openapigen.modules.OpenAPIModule
-import io.ktor.server.application.ApplicationCallPipeline
-import io.ktor.server.application.BaseApplicationPlugin
-import io.ktor.server.application.call
-import io.ktor.server.request.path
-import io.ktor.server.response.respond
-import io.ktor.server.response.respondRedirect
-import io.ktor.util.AttributeKey
+import io.ktor.server.application.*
+import io.ktor.server.request.*
+import io.ktor.server.response.*
+import io.ktor.util.*
 import org.reflections.Reflections
 import kotlin.reflect.full.starProjectedType
 
@@ -33,14 +30,20 @@ class OpenAPIGen(
         (config.scanPackagesForModules + javaClass.`package`.name).forEach { packageName ->
             val reflections = Reflections(packageName)
             log.debug("Registering modules in package $packageName")
-            val objects = reflections.getSubTypesOf(OpenAPIGenExtension::class.java).mapNotNull { it.kotlin.objectInstance }
+            val objects = reflections.getSubTypesOf(OpenAPIGenExtension::class.java)
+                .mapNotNull { it.kotlin.objectInstance }
             objects.forEach {
                 log.trace("Registering global module: ${it::class.simpleName}")
                 it.onInit(this)
             }
         }
         config.removeModules.forEach(globalModuleProvider::unRegisterModule)
-        config.addModules.forEach { globalModuleProvider.registerModule(it, it::class.starProjectedType) }
+        config.addModules.forEach {
+            globalModuleProvider.registerModule(
+                it,
+                it::class.starProjectedType
+            )
+        }
     }
 
     class Configuration(val api: OpenAPIModel) {
@@ -56,7 +59,10 @@ class OpenAPIGen(
             api.servers.add(ServerModel(url).apply(configure))
         }
 
-        inline fun externalDocs(url: String, crossinline configure: ExternalDocumentationModel.() -> Unit = {}) {
+        inline fun externalDocs(
+            url: String,
+            crossinline configure: ExternalDocumentationModel.() -> Unit = {}
+        ) {
             api.externalDocs = ExternalDocumentationModel(url).apply(configure)
         }
 
@@ -104,10 +110,14 @@ class OpenAPIGen(
         return tag.name
     }
 
-    companion object Plugin : BaseApplicationPlugin<ApplicationCallPipeline, Configuration, OpenAPIGen> {
+    companion object Plugin :
+        BaseApplicationPlugin<ApplicationCallPipeline, Configuration, OpenAPIGen> {
         override val key = AttributeKey<OpenAPIGen>("OpenAPI Generator")
 
-        override fun install(pipeline: ApplicationCallPipeline, configure: Configuration.() -> Unit): OpenAPIGen {
+        override fun install(
+            pipeline: ApplicationCallPipeline,
+            configure: Configuration.() -> Unit
+        ): OpenAPIGen {
             val api = OpenAPIModel()
             val cfg = Configuration(api).apply(configure)
 
@@ -120,7 +130,11 @@ class OpenAPIGen(
             }
 
             if (cfg.serveSwaggerUi) {
-                val ui = SwaggerUi(cfg.swaggerUiPath, cfg.swaggerUiVersion, if (cfg.serveOpenApiJson) cfg.openApiJsonPath else null)
+                val ui = SwaggerUi(
+                    cfg.swaggerUiPath,
+                    cfg.swaggerUiVersion,
+                    if (cfg.serveOpenApiJson) cfg.openApiJsonPath else null
+                )
                 val swaggerRoot = "/${cfg.swaggerUiPath.removePrefix("/")}"
                 val swaggerUiResources = "/${cfg.swaggerUiPath.trim('/')}/"
                 pipeline.intercept(ApplicationCallPipeline.Call) {

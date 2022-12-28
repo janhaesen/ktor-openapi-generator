@@ -16,7 +16,7 @@ abstract class NumberConstraintProcessor<A: Annotation>(allowedTypes: Iterable<K
 
     val types = allowedTypes.flatMap { listOf(it.withNullability(true), it.withNullability(false)) }
 
-    abstract fun process(modelLitteral: SchemaModel.SchemaModelLitteral<*>, annotation: A): SchemaModel.SchemaModelLitteral<*>
+    abstract fun process(modelLitteral: SchemaModel.SchemaModelLiteral<*>, annotation: A): SchemaModel.SchemaModelLiteral<*>
 
 
     abstract fun getConstraint(annotation: A): NumberConstraint
@@ -50,7 +50,7 @@ abstract class NumberConstraintProcessor<A: Annotation>(allowedTypes: Iterable<K
     }
 
     override fun process(model: SchemaModel<*>, type: KType, annotation: A): SchemaModel<*> {
-        return if (model is SchemaModel.SchemaModelLitteral<*> && types.contains(type)) {
+        return if (model is SchemaModel.SchemaModelLiteral<*> && types.contains(type)) {
             process(model, annotation)
         } else {
             log.warn("${annotation::class} can only be used on types: $types")

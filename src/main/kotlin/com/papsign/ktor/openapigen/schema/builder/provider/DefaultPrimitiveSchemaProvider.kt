@@ -17,25 +17,43 @@ import java.time.*
 import java.util.*
 import kotlin.reflect.KType
 
-object DefaultPrimitiveSchemaProvider: SchemaBuilderProviderModule, OpenAPIGenModuleExtension, DefaultOpenAPIModule {
+object DefaultPrimitiveSchemaProvider :
+    SchemaBuilderProviderModule, OpenAPIGenModuleExtension, DefaultOpenAPIModule {
 
-    private data class Builder(override val superType: KType, private val model: SchemaModel.SchemaModelLitteral<*>) : SchemaBuilder {
-        override fun build(type: KType, builder: FinalSchemaBuilder, finalize: (SchemaModel<*>)->SchemaModel<*>): SchemaModel<*> {
+    private data class Builder(
+        override val superType: KType,
+        private val model: SchemaModel.SchemaModelLiteral<*>
+    ) : SchemaBuilder {
+        override fun build(
+            type: KType,
+            builder: FinalSchemaBuilder,
+            finalize: (SchemaModel<*>) -> SchemaModel<*>
+        ): SchemaModel<*> {
             checkType(type)
             return finalize(model.copy(nullable = type.isMarkedNullable))
         }
 
         companion object {
-            inline operator fun <reified T> invoke(model: SchemaModel.SchemaModelLitteral<T>): Builder {
+            inline operator fun <reified T> invoke(model: SchemaModel.SchemaModelLiteral<T>): Builder {
                 return Builder(
                     getKType<T?>(),
                     model
                 )
             }
 
-            inline operator fun <reified T> invoke(type: DataType, format: DataFormat? = null, pattern: String? = null, example: T? = null): Builder {
+            inline operator fun <reified T> invoke(
+                type: DataType,
+                format: DataFormat? = null,
+                pattern: String? = null,
+                example: T? = null
+            ): Builder {
                 return Builder(
-                    SchemaModel.SchemaModelLitteral<T>(type, format, pattern = pattern, example = example)
+                    SchemaModel.SchemaModelLiteral(
+                        type,
+                        format,
+                        pattern = pattern,
+                        example = example
+                    )
                 )
             }
         }
@@ -74,37 +92,37 @@ object DefaultPrimitiveSchemaProvider: SchemaBuilderProviderModule, OpenAPIGenMo
         Builder<BigDecimal>(
             DataType.number
         ),
-        Builder<LocalDate>(
+        Builder(
             DataType.string,
             DataFormat.date,
             example = LocalDate.now()
         ),
-        Builder<LocalTime>(
+        Builder(
             DataType.string,
             pattern = "HH:mm:ss",
             example = LocalTime.now()
         ),
-        Builder<OffsetTime>(
+        Builder(
             DataType.string,
             pattern = "HH:mm:ss+XXX",
             example = OffsetTime.now()
         ),
-        Builder<LocalDateTime>(
+        Builder(
             DataType.string,
             DataFormat.`date-time`,
             example = LocalDateTime.now()
         ),
-        Builder<OffsetDateTime>(
+        Builder(
             DataType.string,
             DataFormat.`date-time`,
             example = OffsetDateTime.now()
         ),
-        Builder<ZonedDateTime>(
+        Builder(
             DataType.string,
             DataFormat.`date-time`,
             example = ZonedDateTime.now()
         ),
-        Builder<Instant>(
+        Builder(
             DataType.string,
             DataFormat.`date-time`,
             example = Instant.now()

@@ -1,7 +1,6 @@
 package com.papsign.ktor.openapigen.schema.builder.provider
 
 import com.papsign.ktor.openapigen.*
-import com.papsign.ktor.openapigen.classLogger
 import com.papsign.ktor.openapigen.model.schema.SchemaModel
 import com.papsign.ktor.openapigen.modules.DefaultOpenAPIModule
 import com.papsign.ktor.openapigen.modules.ModuleProvider
@@ -16,28 +15,36 @@ import kotlin.reflect.full.starProjectedType
 import kotlin.reflect.full.withNullability
 import kotlin.reflect.jvm.jvmErasure
 
-object DefaultObjectSchemaProvider : SchemaBuilderProviderModule, OpenAPIGenModuleExtension, DefaultOpenAPIModule {
+object DefaultObjectSchemaProvider :
+    SchemaBuilderProviderModule, OpenAPIGenModuleExtension, DefaultOpenAPIModule {
     private val log = classLogger()
 
     override fun provide(apiGen: OpenAPIGen, provider: ModuleProvider<*>): List<SchemaBuilder> {
         val namer = provider.ofType<SchemaNamer>().let {
-            val last = it.lastOrNull() ?: DefaultSchemaNamer.also { log.debug("No ${SchemaNamer::class} provided, using ${it::class}") }
+            val last = it.lastOrNull()
+                ?: DefaultSchemaNamer.also { log.debug("No ${SchemaNamer::class} provided, using ${it::class}") }
             if (it.size > 1) log.warn("Multiple ${SchemaNamer::class} provided, choosing last: ${last::class}")
             last
         }
         return listOf(Builder(apiGen, namer))
     }
 
-    private class Builder(private val apiGen: OpenAPIGen, private val namer: SchemaNamer) : SchemaBuilder {
+    private class Builder(private val apiGen: OpenAPIGen, private val namer: SchemaNamer) :
+        SchemaBuilder {
 
         override val superType: KType = getKType<Any?>()
 
         private val refs = HashMap<KType, SchemaModel.SchemaModelRef<*>>()
 
-        override fun build(type: KType, builder: FinalSchemaBuilder, finalize: (SchemaModel<*>)->SchemaModel<*>): SchemaModel<*> {
+        override fun build(
+            type: KType,
+            builder: FinalSchemaBuilder,
+            finalize: (SchemaModel<*>) -> SchemaModel<*>
+        ): SchemaModel<*> {
             checkType(type)
             val nonNullType = type.withNullability(false)
-            return refs[nonNullType] ?: {
+            return refs[nonNullType] ?: // needed to prevent infinite recursion
+            run {
                 val erasure = nonNullType.jvmErasure
                 val name = namer[nonNullType]
                 val ref = SchemaModel.SchemaModelRef<Any?>("#/components/schemas/$name")
@@ -46,7 +53,7 @@ object DefaultObjectSchemaProvider : SchemaBuilderProviderModule, OpenAPIGenModu
                     SchemaModel.OneSchemaModelOf(erasure.sealedSubclasses.map { builder.build(it.starProjectedType) })
                 } else {
                     val props = type.memberProperties.filter { it.source.visibility == KVisibility.PUBLIC }
-                    SchemaModel.SchemaModelObj<Any?>(
+                    SchemaModel.SchemaModelObj(
                         props.associate {
                             Pair(it.name, builder.build(it.type, it.source.annotations))
                         },
@@ -59,8 +66,9 @@ object DefaultObjectSchemaProvider : SchemaBuilderProviderModule, OpenAPIGenModu
                 val existing = apiGen.api.components.schemas[name]
                 if (existing != null && existing != final) log.error("Schema with name $name already exists, and is not the same as the new one, replacing...")
                 apiGen.api.components.schemas[name] = final
+                // needed to prevent infinite recursion
                 ref
-            }()
+            }
         }
     }
 }

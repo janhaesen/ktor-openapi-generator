@@ -11,7 +11,6 @@ import com.papsign.ktor.openapigen.schema.builder.SchemaBuilder
 import com.papsign.ktor.openapigen.schema.processor.SchemaProcessor
 import com.papsign.ktor.openapigen.schema.processor.SchemaProcessorAnnotation
 import java.util.*
-import kotlin.Comparator
 import kotlin.reflect.KType
 import kotlin.reflect.full.findAnnotation
 import kotlin.reflect.full.isSubclassOf
@@ -19,7 +18,8 @@ import kotlin.reflect.full.isSubtypeOf
 import kotlin.reflect.full.withNullability
 import kotlin.reflect.jvm.jvmErasure
 
-object FinalSchemaBuilderProvider: FinalSchemaBuilderProviderModule, OpenAPIGenModuleExtension {
+object FinalSchemaBuilderProvider :
+    FinalSchemaBuilderProviderModule, OpenAPIGenModuleExtension {
 
     private val log = classLogger()
 
@@ -30,10 +30,14 @@ object FinalSchemaBuilderProvider: FinalSchemaBuilderProviderModule, OpenAPIGenM
     }
 
     private fun SchemaProcessorAnnotation.getHandlerInstance(): SchemaProcessor<*> {
-        return handler.objectInstance ?: error("${SchemaProcessorAnnotation::class.simpleName} handler must be an object")
+        return handler.objectInstance
+            ?: error("${SchemaProcessorAnnotation::class.simpleName} handler must be an object")
     }
 
-    private fun SchemaModel<*>.applyAnnotations(type: KType, annotations: List<Annotation>): SchemaModel<*> {
+    private fun SchemaModel<*>.applyAnnotations(
+        type: KType,
+        annotations: List<Annotation>
+    ): SchemaModel<*> {
         return annotations.mapNotNull { annot ->
             annot.annotationClass
                 .findAnnotation<SchemaProcessorAnnotation>()
@@ -47,16 +51,14 @@ object FinalSchemaBuilderProvider: FinalSchemaBuilderProviderModule, OpenAPIGenM
 
     private class Builder(builders: List<SchemaBuilder>) : FinalSchemaBuilder {
 
-        private val map = TreeMap<KType, SchemaBuilder>(
-            Comparator { a, b ->
-                when {
-                    a.isSubtypeOf(b) -> -1
-                    b.isSubtypeOf(a) -> 1
-                    a == b -> 0
-                    else -> 1
-                }
+        private val map = TreeMap<KType, SchemaBuilder> { a, b ->
+            when {
+                a.isSubtypeOf(b) -> -1
+                b.isSubtypeOf(a) -> 1
+                a == b -> 0
+                else -> 1
             }
-        ).apply {
+        }.apply {
             putAll(builders.groupBy { it.superType }.map { (key, value) ->
                 val last = value.last()
                 if (value.size > 1) log.warn("Two builder detected for type $key, selecting last: $last")
@@ -67,14 +69,21 @@ object FinalSchemaBuilderProvider: FinalSchemaBuilderProviderModule, OpenAPIGenM
         override fun build(type: KType, annotations: List<Annotation>): SchemaModel<*> {
             type.let {
                 when {
-                    type.jvmErasure.isSubclassOf(Optional::class) -> type.arguments[0].type!!.withNullability(true)
+                    type.jvmErasure.isSubclassOf(Optional::class) -> type.arguments[0].type!!.withNullability(
+                        true
+                    )
+
                     else -> type
                 }
-            }.let { type ->
-                return map.getOrPut(type) {
-                    map.entries.firstOrNull { type.isSubtypeOf(it.key) }?.value
-                        ?: error("Schema builder could not find declared builder for type $type, make sure it has a provider registered on the route")
-                }.build(type, this) { it.applyAnnotations(type, type.jvmErasure.annotations).applyAnnotations(type, type.annotations).applyAnnotations(type, annotations) }
+            }.let { kType ->
+                return map.getOrPut(kType) {
+                    map.entries.firstOrNull { kType.isSubtypeOf(it.key) }?.value
+                        ?: error("Schema builder could not find declared builder for type $kType, make sure it has a provider registered on the route")
+                }.build(kType, this) {
+                    it.applyAnnotations(kType, kType.jvmErasure.annotations)
+                        .applyAnnotations(kType, kType.annotations)
+                        .applyAnnotations(kType, annotations)
+                }
             }
         }
     }

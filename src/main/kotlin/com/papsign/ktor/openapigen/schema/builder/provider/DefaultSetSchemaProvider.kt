@@ -9,13 +9,14 @@ import com.papsign.ktor.openapigen.modules.ModuleProvider
 import com.papsign.ktor.openapigen.schema.builder.FinalSchemaBuilder
 import com.papsign.ktor.openapigen.schema.builder.SchemaBuilder
 import kotlin.reflect.KType
-import kotlin.reflect.full.withNullability
 
-object DefaultSetSchemaProvider: SchemaBuilderProviderModule, OpenAPIGenModuleExtension, DefaultOpenAPIModule {
+object DefaultSetSchemaProvider :
+    SchemaBuilderProviderModule, OpenAPIGenModuleExtension, DefaultOpenAPIModule {
 
     private val builders = listOf(
         Builder(getKType<Set<*>?>()) { type: KType ->
-            type.arguments[0].type ?: error("bad type $type: star projected types are not supported")
+            type.arguments[0].type
+                ?: error("bad type $type: star projected types are not supported")
         }
     )
 
@@ -23,11 +24,24 @@ object DefaultSetSchemaProvider: SchemaBuilderProviderModule, OpenAPIGenModuleEx
         return builders
     }
 
-    private data class Builder(override val superType: KType, private val getter: (KType) -> KType) :
+    private data class Builder(
+        override val superType: KType,
+        private val getter: (KType) -> KType
+    ) :
         SchemaBuilder {
-        override fun build(type: KType, builder: FinalSchemaBuilder, finalize: (SchemaModel<*>)->SchemaModel<*>): SchemaModel<*> {
+        override fun build(
+            type: KType,
+            builder: FinalSchemaBuilder,
+            finalize: (SchemaModel<*>) -> SchemaModel<*>
+        ): SchemaModel<*> {
             checkType(type)
-            return finalize(SchemaModel.SchemaModelArr<Any?>(builder.build(getter(type)), type.isMarkedNullable, uniqueItems = true))
+            return finalize(
+                SchemaModel.SchemaModelArr<Any?>(
+                    builder.build(getter(type)),
+                    type.isMarkedNullable,
+                    uniqueItems = true
+                )
+            )
         }
     }
 }

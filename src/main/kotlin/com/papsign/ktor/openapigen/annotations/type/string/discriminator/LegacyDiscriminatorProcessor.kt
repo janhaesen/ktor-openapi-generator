@@ -20,7 +20,7 @@ annotation class DiscriminatorAnnotation(val fieldName: String = "type")
 // - { discriminator: { propertyName: discriminatorName } } in each type
 object LegacyDiscriminatorProcessor : SchemaProcessor<DiscriminatorAnnotation> {
     override fun process(model: SchemaModel<*>, type: KType, annotation: DiscriminatorAnnotation): SchemaModel<*> {
-        val mapElement = (annotation.fieldName to SchemaModel.SchemaModelLitteral<String>(
+        val mapElement = (annotation.fieldName to SchemaModel.SchemaModelLiteral<String>(
             DataType.string,
             DataFormat.string,
             false

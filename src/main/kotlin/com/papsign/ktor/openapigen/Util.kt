@@ -1,8 +1,7 @@
 package com.papsign.ktor.openapigen
 
 import com.papsign.ktor.openapigen.model.DataModel
-import io.ktor.server.application.Application
-import io.ktor.server.application.plugin
+import io.ktor.server.application.*
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
 
@@ -27,11 +26,20 @@ fun Map<String, *>.cleanEmptyValues(serializationSettings: SerializationSettings
     }
 }
 
-fun convertToValue(value: Any?, serializationSettings: SerializationSettings = SerializationSettings()): Any? {
+fun convertToValue(
+    value: Any?,
+    serializationSettings: SerializationSettings = SerializationSettings()
+): Any? {
     return when (value) {
         is DataModel -> value.serialize()
-        is Map<*, *> -> value.entries.associate { (key, value) -> Pair(key.toString(), convertToValue(value, serializationSettings)) }
+        is Map<*, *> -> value.entries.associate { (key, value) ->
+            Pair(
+                key.toString(),
+                convertToValue(value, serializationSettings)
+            )
+        }
             .cleanEmptyValues(serializationSettings)
+
         is Iterable<*> -> value.map { convertToValue(it, serializationSettings) }
         else -> value
     }

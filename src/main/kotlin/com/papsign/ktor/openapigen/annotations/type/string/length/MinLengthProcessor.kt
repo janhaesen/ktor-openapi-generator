@@ -3,9 +3,9 @@ package com.papsign.ktor.openapigen.annotations.type.string.length
 import com.papsign.ktor.openapigen.model.schema.SchemaModel
 
 object MinLengthProcessor : LengthConstraintProcessor<MinLength>() {
-    override fun process(model: SchemaModel.SchemaModelLitteral<*>, annotation: MinLength): SchemaModel.SchemaModelLitteral<*> {
+    override fun process(model: SchemaModel.SchemaModelLiteral<*>, annotation: MinLength): SchemaModel.SchemaModelLiteral<*> {
         @Suppress("UNCHECKED_CAST")
-        return (model as SchemaModel.SchemaModelLitteral<Any?>).apply {
+        return (model as SchemaModel.SchemaModelLiteral<Any?>).apply {
             minLength = annotation.value
         }
     }

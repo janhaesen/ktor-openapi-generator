@@ -50,7 +50,7 @@ sealed class SchemaModel<T> : DataModel {
         override var description: String? = null
     ) : SchemaModel<T>()
 
-    data class SchemaModelLitteral<T>(
+    data class SchemaModelLiteral<T>(
         var type: DataType? = null,
         var format: DataFormat? = null,
         var nullable: Boolean = false,

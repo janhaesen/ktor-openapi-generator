@@ -1,17 +1,15 @@
 package com.papsign.ktor.openapigen
 
-import io.ktor.http.ContentType
+import io.ktor.http.*
 import io.ktor.http.ContentType.Image.PNG
 import io.ktor.http.ContentType.Text.CSS
 import io.ktor.http.ContentType.Text.Html
 import io.ktor.http.ContentType.Text.JavaScript
-import io.ktor.http.content.OutgoingContent
-import io.ktor.http.withCharset
-import io.ktor.server.application.ApplicationCall
-import io.ktor.server.plugins.origin
-import io.ktor.server.request.host
-import io.ktor.server.request.port
-import io.ktor.server.response.respond
+import io.ktor.http.content.*
+import io.ktor.server.application.*
+import io.ktor.server.plugins.*
+import io.ktor.server.request.*
+import io.ktor.server.response.*
 import java.net.URL
 
 class SwaggerUi(
@@ -26,19 +24,27 @@ class SwaggerUi(
             in notFound -> return
             null -> return
             else -> {
-                val resource = this::class.java.getResource("/META-INF/resources/webjars/swagger-ui/$version/$filename")
+                val resource =
+                    this::class.java.getResource("/META-INF/resources/webjars/swagger-ui/$version/$filename")
                 if (resource == null) {
                     notFound.add(filename)
                     return
                 }
-                call.respond(content.getOrPut(filename) { ResourceContent(resource, call.redirectUrl(), openApiJsonUrl) })
+                call.respond(content.getOrPut(filename) {
+                    ResourceContent(
+                        resource,
+                        call.redirectUrl(),
+                        openApiJsonUrl
+                    )
+                })
             }
         }
     }
 
     private fun ApplicationCall.redirectUrl(): String {
         val defaultPort = if (request.origin.scheme == "http") 80 else 443
-        val hostPort = request.host() + request.port().let { port -> if (port == defaultPort) "" else ":$port" }
+        val hostPort = request.host() + request.port()
+            .let { port -> if (port == defaultPort) "" else ":$port" }
         val protocol = request.origin.scheme
         return "$protocol://$hostPort/${basePath.trim('/')}/"
     }
@@ -61,7 +67,10 @@ private class ResourceContent(
     private val bytes by lazy {
         if (contentType == JavaScript) {
             resource.readText()
-                .replace("http://localhost:3200/oauth2-redirect.html", address + "oauth2-redirect.html")
+                .replace(
+                    "http://localhost:3200/oauth2-redirect.html",
+                    address + "oauth2-redirect.html"
+                )
                 .let {
                     if (openApiJsonUrl != null) {
                         it.replace("https://petstore.swagger.io/v2/swagger.json", openApiJsonUrl)

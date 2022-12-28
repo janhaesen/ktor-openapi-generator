@@ -11,7 +11,8 @@ import com.papsign.ktor.openapigen.schema.builder.SchemaBuilder
 import kotlin.reflect.KType
 import kotlin.reflect.full.withNullability
 
-object DefaultCollectionSchemaProvider: SchemaBuilderProviderModule, OpenAPIGenModuleExtension, DefaultOpenAPIModule {
+object DefaultCollectionSchemaProvider : SchemaBuilderProviderModule, OpenAPIGenModuleExtension,
+    DefaultOpenAPIModule {
 
     private val builders = mapOf(
         getKType<BooleanArray>() to { _: KType -> getKType<Boolean>() },
@@ -20,10 +21,12 @@ object DefaultCollectionSchemaProvider: SchemaBuilderProviderModule, OpenAPIGenM
         getKType<FloatArray>() to { _: KType -> getKType<Float>() },
         getKType<DoubleArray>() to { _: KType -> getKType<Double>() },
         getKType<Array<*>>() to { type: KType ->
-            type.arguments[0].type ?: error("bad type $type: star projected types are not supported")
+            type.arguments[0].type
+                ?: error("bad type $type: star projected types are not supported")
         },
         getKType<Iterable<*>>() to { type: KType ->
-            type.arguments[0].type ?: error("bad type $type: star projected types are not supported")
+            type.arguments[0].type
+                ?: error("bad type $type: star projected types are not supported")
         }
     ).mapKeys { (key, _) ->
         key.withNullability(true)
@@ -38,11 +41,23 @@ object DefaultCollectionSchemaProvider: SchemaBuilderProviderModule, OpenAPIGenM
         return builders
     }
 
-    private data class Builder(override val superType: KType, private val getter: (KType) -> KType) :
+    private data class Builder(
+        override val superType: KType,
+        private val getter: (KType) -> KType
+    ) :
         SchemaBuilder {
-        override fun build(type: KType, builder: FinalSchemaBuilder, finalize: (SchemaModel<*>)->SchemaModel<*>): SchemaModel<*> {
+        override fun build(
+            type: KType,
+            builder: FinalSchemaBuilder,
+            finalize: (SchemaModel<*>) -> SchemaModel<*>
+        ): SchemaModel<*> {
             checkType(type)
-            return finalize(SchemaModel.SchemaModelArr<Any?>(builder.build(getter(type)), type.isMarkedNullable))
+            return finalize(
+                SchemaModel.SchemaModelArr<Any?>(
+                    builder.build(getter(type)),
+                    type.isMarkedNullable
+                )
+            )
         }
     }
 }

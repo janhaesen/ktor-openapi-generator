@@ -11,12 +11,11 @@ import com.papsign.ktor.openapigen.model.schema.DataFormat
 import com.papsign.ktor.openapigen.model.schema.DataType
 import com.papsign.ktor.openapigen.model.schema.SchemaModel
 import com.papsign.ktor.openapigen.modules.ModuleProvider
-import io.ktor.http.ContentType
-import io.ktor.http.HttpStatusCode
-import io.ktor.server.application.ApplicationCall
-import io.ktor.server.request.receiveStream
-import io.ktor.server.response.respondBytes
-import io.ktor.util.pipeline.PipelineContext
+import io.ktor.http.*
+import io.ktor.server.application.*
+import io.ktor.server.request.*
+import io.ktor.server.response.*
+import io.ktor.util.pipeline.*
 import java.io.InputStream
 import kotlin.reflect.*
 import kotlin.reflect.full.declaredMemberProperties
@@ -85,7 +84,7 @@ object BinaryContentTypeParser: BodyParser, ResponseSerializer, OpenAPIGenModule
                 }
             }
         }
-        val mediaType: MediaTypeModel<T> = MediaTypeModel(SchemaModel.SchemaModelLitteral(DataType.string, DataFormat.binary), example)
+        val mediaType: MediaTypeModel<T> = MediaTypeModel(SchemaModel.SchemaModelLiteral(DataType.string, DataFormat.binary), example)
         return contentTypes.map(ContentType.Companion::parse).associateWith { mediaType.copy() }
     }
 

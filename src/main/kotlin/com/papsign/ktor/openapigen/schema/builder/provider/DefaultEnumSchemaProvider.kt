@@ -11,9 +11,10 @@ import com.papsign.ktor.openapigen.schema.builder.SchemaBuilder
 import kotlin.reflect.KType
 import kotlin.reflect.jvm.jvmErasure
 
-object DefaultEnumSchemaProvider: SchemaBuilderProviderModule, OpenAPIGenModuleExtension, DefaultOpenAPIModule {
+object DefaultEnumSchemaProvider :
+    SchemaBuilderProviderModule, OpenAPIGenModuleExtension, DefaultOpenAPIModule {
 
-    private object Builder: SchemaBuilder {
+    private object Builder : SchemaBuilder {
         override val superType: KType = getKType<Enum<*>?>()
 
         override fun build(
@@ -22,10 +23,12 @@ object DefaultEnumSchemaProvider: SchemaBuilderProviderModule, OpenAPIGenModuleE
             finalize: (SchemaModel<*>) -> SchemaModel<*>
         ): SchemaModel<*> {
             checkType(type)
-            return finalize(SchemaModel.SchemaModelEnum<Any?>(
-                type.jvmErasure.java.enumConstants.map { it.toString() },
-                type.isMarkedNullable
-            ))
+            return finalize(
+                SchemaModel.SchemaModelEnum<Any?>(
+                    type.jvmErasure.java.enumConstants.map { it.toString() },
+                    type.isMarkedNullable
+                )
+            )
         }
     }
 

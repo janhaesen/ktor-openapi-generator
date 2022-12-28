@@ -4,8 +4,8 @@ import com.papsign.ktor.openapigen.modules.RouteOpenAPIModule
 import com.papsign.ktor.openapigen.route.method
 import com.papsign.ktor.openapigen.route.preHandle
 import com.papsign.ktor.openapigen.route.response.OpenAPIPipelineResponseContext
-import io.ktor.http.HttpMethod
-import io.ktor.util.KtorDsl
+import io.ktor.http.*
+import io.ktor.util.*
 import kotlin.reflect.full.starProjectedType
 import kotlin.reflect.typeOf
 
@@ -141,8 +141,14 @@ inline fun <reified TParams : Any, reified TResponse : Any, reified TRequest : A
     exampleRequest: TRequest? = null,
     noinline body: suspend OpenAPIPipelineResponseContext<TResponse>.(TParams, TRequest) -> Unit
 ) {
-    method(method).apply { modules.forEach { provider.registerModule(it, it::class.starProjectedType) } }
-        .handle(exampleResponse, exampleRequest, body)
+    method(method).apply {
+        modules.forEach {
+            provider.registerModule(
+                it,
+                it::class.starProjectedType
+            )
+        }
+    }.handle(exampleResponse, exampleRequest, body)
 }
 
 @KtorDsl
@@ -152,8 +158,14 @@ inline fun <reified TParams : Any, reified TResponse : Any> NormalOpenAPIRoute.r
     exampleResponse: TResponse? = null,
     noinline body: suspend OpenAPIPipelineResponseContext<TResponse>.(TParams) -> Unit
 ) {
-    method(method).apply { modules.forEach { provider.registerModule(it, it::class.starProjectedType) } }
-        .handle(exampleResponse, body)
+    method(method).apply {
+        modules.forEach {
+            provider.registerModule(
+                it,
+                it::class.starProjectedType
+            )
+        }
+    }.handle(exampleResponse, body)
 }
 
 @KtorDsl

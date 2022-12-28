@@ -13,38 +13,68 @@ import com.papsign.ktor.openapigen.modules.ofType
 import com.papsign.ktor.openapigen.modules.openapi.OperationModule
 import com.papsign.ktor.openapigen.modules.providers.StatusProvider
 import com.papsign.ktor.openapigen.modules.registerModule
-import io.ktor.http.HttpStatusCode
+import io.ktor.http.*
+import kotlin.collections.associate
+import kotlin.collections.component1
+import kotlin.collections.component2
+import kotlin.collections.flatten
+import kotlin.collections.forEach
+import kotlin.collections.lastOrNull
+import kotlin.collections.map
+import kotlin.collections.mapNotNull
+import kotlin.collections.set
+import kotlin.collections.toMutableMap
 import kotlin.reflect.KAnnotatedElement
 import kotlin.reflect.KType
 import kotlin.reflect.full.findAnnotation
 
-class ResponseHandlerModule<T>(val responseType: KType, val responseExample: T? = null) : OperationModule {
+class ResponseHandlerModule<T>(val responseType: KType, val responseExample: T? = null) :
+    OperationModule {
     private val log = classLogger()
-    override fun configure(apiGen: OpenAPIGen, provider: ModuleProvider<*>, operation: OperationModel) {
-        val responseMeta = (responseType.classifier as? KAnnotatedElement)?.findAnnotation<Response>()
-        val statusCode =  provider.ofType<StatusProvider>().lastOrNull()?.getStatusForType(responseType) ?: responseMeta?.statusCode?.let { HttpStatusCode.fromValue(it) }
-        ?: HttpStatusCode.OK
+    override fun configure(
+        apiGen: OpenAPIGen,
+        provider: ModuleProvider<*>,
+        operation: OperationModel
+    ) {
+        val responseMeta =
+            (responseType.classifier as? KAnnotatedElement)?.findAnnotation<Response>()
+        val statusCode =
+            provider.ofType<StatusProvider>()
+                .lastOrNull()
+                ?.getStatusForType(responseType)
+                ?: responseMeta?.statusCode?.let { HttpStatusCode.fromValue(it) }
+                ?: HttpStatusCode.OK
+
         val status = statusCode.value.toString()
         val map = provider.ofType<ResponseSerializer>().mapNotNull {
-            val mediaType = it.getMediaType(responseType, apiGen, provider, responseExample, ContentTypeProvider.Usage.SERIALIZE)
-                    ?: return@mapNotNull null
+            val mediaType = it.getMediaType(
+                responseType,
+                apiGen,
+                provider,
+                responseExample,
+                ContentTypeProvider.Usage.SERIALIZE
+            ) ?: return@mapNotNull null
             provider.registerModule(SelectedSerializer(it))
             mediaType.map { Pair(it.key.toString(), it.value) }
         }.flatten().associate { it }
+
         val descstr = responseMeta?.description ?: statusCode.description
-        operation.responses[status] = operation.responses[status]?.apply {
-            map.forEach { (key, value) ->
-                content.putIfAbsent(key, value)?.let { if (value != it) log.warn("ContentType of $responseType response $key already registered, ignoring $value") }
-            }
-            if (description != statusCode.description) {
-                if (responseMeta?.description != null) log.warn("ContentType description of $responseType response already registered, ignoring")
-            } else {
-                description = responseMeta?.description ?: statusCode.description
-            }
-        } ?: StatusResponseModel(descstr, content = map.toMutableMap())
+        operation.responses[status] = operation.responses[status]
+            ?.apply {
+                map.forEach { (key, value) ->
+                    content.putIfAbsent(key, value)
+                        ?.let { if (value != it) log.warn("ContentType of $responseType response $key already registered, ignoring $value") }
+                }
+                if (description != statusCode.description) {
+                    if (responseMeta?.description != null) log.warn("ContentType description of $responseType response already registered, ignoring")
+                } else {
+                    description = responseMeta?.description ?: statusCode.description
+                }
+            } ?: StatusResponseModel(descstr, content = map.toMutableMap())
     }
 
     companion object {
-        fun <T : Any> create(tType: KType, responseExample: T? = null) = ResponseHandlerModule(tType, responseExample)
+        fun <T : Any> create(tType: KType, responseExample: T? = null) =
+            ResponseHandlerModule(tType, responseExample)
     }
 }

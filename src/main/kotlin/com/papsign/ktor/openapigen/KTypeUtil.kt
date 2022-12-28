@@ -30,14 +30,16 @@ data class KTypeProperty(
 
 val KType.memberProperties: List<KTypeProperty>
     get() {
-        val typeParameters = jvmErasure.typeParameters.zip(arguments).associate { Pair(it.first.name, it.second.type) }
-        return jvmErasure.memberProperties.map {
-            val retType = it.returnType
+        val typeParameters = jvmErasure.typeParameters.zip(arguments)
+            .associate { Pair(it.first.name, it.second.type) }
+        return jvmErasure.memberProperties.map { kProperty ->
+            val retType = kProperty.returnType
             val properType = when (val classifier = retType.classifier) {
-                is KTypeParameter -> typeParameters[classifier.name] ?: it.returnType
-                else -> it.returnType
+                is KTypeParameter -> typeParameters[classifier.name] ?: kProperty.returnType
+                else -> kProperty.returnType
             }
-            KTypeProperty(it.name, properType, it)
+
+            KTypeProperty(kProperty.name, properType, kProperty)
         }
     }
 
