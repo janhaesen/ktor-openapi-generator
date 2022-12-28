@@ -37,8 +37,7 @@ fun convertToValue(
                 key.toString(),
                 convertToValue(value, serializationSettings)
             )
-        }
-            .cleanEmptyValues(serializationSettings)
+        }.cleanEmptyValues(serializationSettings)
 
         is Iterable<*> -> value.map { convertToValue(it, serializationSettings) }
         else -> value

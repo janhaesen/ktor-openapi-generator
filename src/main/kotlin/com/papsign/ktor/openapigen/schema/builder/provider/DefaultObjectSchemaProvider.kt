@@ -54,12 +54,13 @@ object DefaultObjectSchemaProvider :
                 } else {
                     val props = type.memberProperties.filter { it.source.visibility == KVisibility.PUBLIC }
                     SchemaModel.SchemaModelObj(
-                        props.associate {
+                        properties = props.associate {
                             Pair(it.name, builder.build(it.type, it.source.annotations))
                         },
-                        props.filter {
+                        required = props.filter {
                             !it.type.isMarkedNullable
-                        }.map { it.name }
+                        }.map { it.name },
+                        nullable = type.isMarkedNullable
                     )
                 }
                 val final = finalize(new)

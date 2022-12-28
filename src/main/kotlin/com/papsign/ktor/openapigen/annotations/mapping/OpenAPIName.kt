@@ -13,11 +13,17 @@ private val cache = Collections.synchronizedMap(HashMap<KParameter, String?>())
 val KParameter.openAPIName: String?
     get() = cache.getOrPut(this) {
         val caseSensitiveName = findAnnotation<OpenAPIName>()?.name ?: name
-        if (findAnnotation<HeaderParam>() != null) caseSensitiveName?.lowercase(Locale.getDefault()) else caseSensitiveName
+        if (findAnnotation<HeaderParam>() != null) {
+            caseSensitiveName?.lowercase(Locale.getDefault())
+        } else caseSensitiveName
     }
 
 fun <T> KParameter.remapOpenAPINames(map: Map<String, T>): Map<String, T> {
     val replace = this.openAPIName
     val actual = this.name
-    return if (actual != null && replace != actual) map.mapKeys { (key, _) -> if (key == replace) actual else key } else map
+    return if (actual != null && replace != actual) {
+        map.mapKeys { (key, _) -> if (key == replace) {
+            actual
+        } else key }
+    } else map
 }
