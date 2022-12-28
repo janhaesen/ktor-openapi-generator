@@ -80,3 +80,26 @@ Extra Features:
 ## Examples
 
 Take a look at [a few examples](https://github.com/papsign/Ktor-OpenAPI-Generator/wiki/A-few-examples)
+
+### Using description
+Using the description annotation can be done by annotating the field with:
+```kotlin
+@property:Description("This is a description")
+```
+making a full example as follows:
+```kotlin
+@Response("A String Response")
+data class StringResponse(
+  @property:Description("The string value") val str: String
+)
+```
+Using the annotation without the use site target will result in the code not finding the annotation and therefore no description being set in the generated specification as well as the SwaggerUI.
+
+### Custom name in specification
+It is desired to name a variable according to the camel case Kotlin code style, this can result in properties not being named the way you'd like to have in an API documentation. This can be achieved by annotating it with the `@OpenAPIName` annotation. That will result in the following example:
+```kotlin
+data class NameParam(
+  @HeaderParam("A simple Header Param") @OpenAPIName("X-NAME") 
+  val name: String
+)
+```
